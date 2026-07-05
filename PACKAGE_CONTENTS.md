@@ -32,7 +32,7 @@ url-scraper-package/
 │
 ├── utils/
 │   ├── WebScraper.js       # Orchestrator: fetch/render -> parse -> extract
-│   ├── extractors.js       # Pure extraction functions (7 modes)
+│   ├── extractors.js       # Pure extraction functions (6 modes)
 │   └── renderer.js         # Playwright JS rendering (lazy-loaded, opt-in)
 │
 ├── lib/
@@ -49,7 +49,7 @@ url-scraper-package/
 ├── tests/                  # Jest suite (61 tests, no network needed)
 │   ├── setup.js            # Forces NODE_ENV=test
 │   ├── ssrf.test.js        # SSRF guard units
-│   ├── extractors.test.js  # Extraction units (incl. genesis-original regression)
+│   ├── extractors.test.js  # Extraction units for all modes
 │   ├── webscraper.test.js  # Orchestration (network mocked)
 │   ├── scraper.test.js     # API integration
 │   └── auth.test.js        # API-key auth
@@ -75,8 +75,8 @@ url-scraper-package/
 
 ## 🎯 Capabilities
 
-- **7 extraction modes**: `headings-paragraphs`, `articles`, `lists`, `tables`,
-  `all-text`, `custom` (CSS selector), `genesis-original`.
+- **6 extraction modes**: `headings-paragraphs`, `articles`, `lists`, `tables`,
+  `all-text`, `custom` (CSS selector).
 - **JavaScript rendering** (`render: true`) via Playwright/Chromium — opt-in, lazy-loaded.
 - **SSRF-safe fetching**: DNS-resolved IP validation, per-redirect re-checks,
   socket pinning; blocks private/loopback/metadata targets.

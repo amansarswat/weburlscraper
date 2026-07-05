@@ -42,10 +42,10 @@ describe('WebScraper.scrape (mocked network)', () => {
         expect(result.metadata.totalItems).toBe(result.content.length);
     });
 
-    test('genesis-original mode pairs headings and paragraphs', async () => {
+    test('all-text mode extracts text nodes over the length threshold', async () => {
         const scraper = new WebScraper();
-        const result = await scraper.scrape('https://example.com', { mode: 'genesis-original' });
-        expect(result.content).toEqual([{ heading: 'Section', paragraph: 'Body of section.' }]);
+        const result = await scraper.scrape('https://example.com', { mode: 'all-text' });
+        expect(result.content.some((c) => c.text === 'Body of section.')).toBe(true);
     });
 
     test('propagates fetch errors (does not swallow)', async () => {

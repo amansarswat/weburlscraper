@@ -109,3 +109,21 @@ coverage/
 # Playwright browser cache (installed via `npx playwright install`)
 # (browsers live in the OS cache, not the repo, but ignore any local copies)
 .playwright/
+test-results/
+playwright-report/
+
+# Built web console (rebuild with: cd web && npm run build)
+web/dist/
+
+# Scratch / temporary verification files
+_*.mjs
+_*.js
+*.tmp
+
+# Stray files sometimes created by accidental shell redirection on Windows
+/cd
+/eslint
+/jest
+/npm
+/npx
+/url-scraper-api@*

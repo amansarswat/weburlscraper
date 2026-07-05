@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [2.3.0] - 2026-07-05
+
+### Removed / Changed
+- **Removed the `genesis-original` extraction mode** and all project branding.
+  Extraction modes are now: `headings-paragraphs`, `all-text`, `articles`, `lists`,
+  `tables`, `custom` (6 total). This is a breaking change for any caller that used
+  `mode: "genesis-original"` — use `headings-paragraphs` instead.
+
 ## [2.2.0] - 2026-07-05
 
 ### Added
@@ -71,9 +79,6 @@ Major production-hardening release. Some response fields changed; see "Breaking"
   `LICENSE`, `CHANGELOG`, `Dockerfile.playwright`.
 
 ### Fixed
-- `genesis-original` extractor: the selector `"h3, h2, h3, p"` listed `h3` twice
-  and treated `<p>` elements as headings. It now correctly pairs `h2`/`h3` with
-  the following paragraph.
 - App no longer calls `listen()` on import (`app.js` is a factory; `server.js`
   bootstraps), fixing `EADDRINUSE` during tests.
 - Batch endpoint now rejects empty arrays and validates each URL + mode.

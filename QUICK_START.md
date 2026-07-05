@@ -64,7 +64,6 @@ API_KEYS=my-secret,another-key
 ## 🔧 Scraping Modes
 
 - **`headings-paragraphs`** (default) - Extract headings with paragraphs
-- **`genesis-original`** - Original Genesis extraction method
 - **`all-text`** - Extract all text content
 - **`articles`** - Extract article content
 - **`lists`** - Extract lists
@@ -93,7 +92,7 @@ docker-compose up
 
 ## 💡 Pro Tips
 
-- Use `mode: "genesis-original"` to get the exact same output as the Genesis project
+- Use `mode: "custom"` with `options.selector` to target exactly the elements you want
 - Enable detailed logging with `NODE_ENV=development`
 - Check `/health/detailed` for system diagnostics
 - Use batch scraping for multiple URLs to save time

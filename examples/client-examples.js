@@ -31,27 +31,26 @@ async function basicScraping() {
     console.log('\n' + '='.repeat(50) + '\n');
 }
 
-// Example 2: Genesis Original Mode
-async function genesisOriginalMode() {
-    console.log('🎯 Genesis Original Mode Example');
-    
+// Example 2: All-text mode
+async function allTextMode() {
+    console.log('🎯 All-text Mode Example');
+
     try {
         const response = await axios.post(`${API_BASE_URL}/scrape`, {
             url: 'https://example.com',
-            mode: 'genesis-original'
+            mode: 'all-text'
         });
-        
+
         if (response.data.success) {
-            console.log('✅ Success with Genesis original extraction!');
+            console.log('✅ Success with all-text extraction!');
             response.data.data.content.forEach((item, index) => {
-                console.log(`${index + 1}. Heading: ${item.heading}`);
-                console.log(`   Paragraph: ${item.paragraph.substring(0, 100)}...`);
+                console.log(`${index + 1}. [${item.type}] ${item.text.substring(0, 100)}...`);
             });
         }
     } catch (error) {
         console.error('❌ Error:', error.response?.data || error.message);
     }
-    
+
     console.log('\n' + '='.repeat(50) + '\n');
 }
 
@@ -229,7 +228,7 @@ async function runAllExamples() {
     // Run all examples
     await getAvailableModes();
     await basicScraping();
-    await genesisOriginalMode();
+    await allTextMode();
     await customSelectorScraping();
     await batchScraping();
     await errorHandlingExample();
@@ -241,7 +240,7 @@ async function runAllExamples() {
 // Export for use in other files
 module.exports = {
     basicScraping,
-    genesisOriginalMode,
+    allTextMode,
     customSelectorScraping,
     batchScraping,
     errorHandlingExample,

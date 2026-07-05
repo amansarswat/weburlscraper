@@ -27,31 +27,6 @@ describe('extractors', () => {
         });
     });
 
-    describe('extractGenesisOriginal (regression: original selector was buggy)', () => {
-        test('pairs h2/h3 with the immediately following paragraph', () => {
-            const $ = load(`
-                <h2>Heading A</h2><p>Para A</p>
-                <h3>Heading B</h3><p>Para B</p>
-            `);
-            const result = extractors.extractGenesisOriginal($);
-            expect(result).toEqual([
-                { heading: 'Heading A', paragraph: 'Para A' },
-                { heading: 'Heading B', paragraph: 'Para B' },
-            ]);
-        });
-
-        test('does NOT treat paragraphs as headings (the original bug)', () => {
-            // Two consecutive <p> must not produce a heading/paragraph pair.
-            const $ = load('<p>First paragraph</p><p>Second paragraph</p>');
-            expect(extractors.extractGenesisOriginal($)).toEqual([]);
-        });
-
-        test('skips headings with no following paragraph', () => {
-            const $ = load('<h2>Lonely heading</h2><h3>Another</h3>');
-            expect(extractors.extractGenesisOriginal($)).toEqual([]);
-        });
-    });
-
     describe('extractHeadingParagraphs', () => {
         test('associates a heading with following paragraphs', () => {
             const $ = load('<h1>Title</h1><p>One.</p><p>Two.</p><h2>Next</h2>');

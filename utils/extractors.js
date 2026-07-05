@@ -57,26 +57,6 @@ function extractHeadingParagraphs($) {
     return content;
 }
 
-/**
- * Original Genesis extraction method: h2/h3 headings paired with the paragraph
- * that immediately follows them.
- *
- * NOTE: the original selector was `"h3, h2, h3, p"` — it listed `h3` twice and,
- * critically, included `p`, so paragraphs were treated as headings and paired
- * with whatever `<p>` followed them. This restores the intended behaviour.
- */
-function extractGenesisOriginal($) {
-    const content = [];
-    $('h2, h3').each((_i, element) => {
-        const heading = $(element).text().trim();
-        const paragraph = $(element).next('p').text().trim();
-        if (heading && paragraph) {
-            content.push({ heading, paragraph });
-        }
-    });
-    return content;
-}
-
 /** All meaningful text nodes (headings, paragraphs, list items) over a min length. */
 function extractAllText($) {
     const content = [];
@@ -212,7 +192,6 @@ function extractCustom($, selector) {
 /** Map of mode name -> extractor. */
 const EXTRACTORS = {
     'headings-paragraphs': ($) => extractHeadingParagraphs($),
-    'genesis-original': ($) => extractGenesisOriginal($),
     'all-text': ($) => extractAllText($),
     articles: ($) => extractArticles($),
     lists: ($) => extractLists($),
@@ -222,7 +201,6 @@ const EXTRACTORS = {
 
 const MODES = [
     { name: 'headings-paragraphs', description: 'Extract headings with their associated paragraphs', default: true },
-    { name: 'genesis-original', description: 'Original Genesis method: h2/h3 headings paired with the following paragraph' },
     { name: 'all-text', description: 'Extract all text content (headings, paragraphs, lists)' },
     { name: 'articles', description: 'Extract article content from common article selectors' },
     { name: 'lists', description: 'Extract ordered and unordered lists' },
@@ -248,7 +226,6 @@ module.exports = {
     extractTitle,
     extractDescription,
     extractHeadingParagraphs,
-    extractGenesisOriginal,
     extractAllText,
     extractArticles,
     extractLists,

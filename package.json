@@ -1,6 +1,6 @@
 {
   "name": "url-scraper-api",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Production-ready web scraping API: multiple extraction modes, optional JS rendering, SSRF-safe fetching, caching, rate limiting, metrics, and OpenAPI docs.",
   "main": "app.js",
   "types": "./sdk/index.d.ts",

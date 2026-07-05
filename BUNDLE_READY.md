@@ -2,7 +2,7 @@
 
 ## 📦 **Complete Package Status: ✅ READY**
 
-This bundle contains a **complete, production-ready URL scraping API** extracted from the Genesis project. Everything is included and ready to deploy!
+This bundle contains a **complete, production-ready URL scraping API**. Everything is included and ready to deploy!
 
 ## 🚀 **Quick Deploy Commands**
 
@@ -33,9 +33,9 @@ npm run pm2:start
 ### **🔧 Core Application**
 - ✅ Express API server with security
 - ✅ Advanced web scraping engine
-- ✅ Genesis-compatible extraction
-- ✅ 7 different scraping modes
-- ✅ Input validation & security
+- ✅ Optional JavaScript rendering (screenshots & PDF)
+- ✅ 6 different scraping modes
+- ✅ Input validation & SSRF protection
 - ✅ Rate limiting & error handling
 
 ### **📚 Complete Documentation**
@@ -74,16 +74,15 @@ npm run pm2:start
 
 ## 🔥 **Key Features**
 
-### **Genesis Compatible**
-- ✅ **`genesis-original` mode** - Exact same extraction as Genesis
-- ✅ **Same response format** - Drop-in replacement
-- ✅ **All original functionality** preserved
+### **Extraction**
+- ✅ **6 extraction modes** - headings/paragraphs, articles, lists, tables, all-text, custom
+- ✅ **JavaScript rendering** - headless-browser rendering, screenshots & PDF (opt-in)
+- ✅ **Consistent response format** - typed, predictable JSON
 
 ### **Enhanced Capabilities**
-- ✅ **Multiple extraction modes** - 7 different ways to extract content
-- ✅ **Batch processing** - Scrape up to 5 URLs simultaneously
+- ✅ **Batch processing** - Scrape multiple URLs simultaneously
 - ✅ **Custom selectors** - Use any CSS selector
-- ✅ **Security first** - URL validation, private network blocking
+- ✅ **Security first** - SSRF protection, URL validation, private network blocking
 
 ### **Production Ready**
 - ✅ **Docker containerized** - Ready for any cloud platform
@@ -103,12 +102,11 @@ npm run pm2:start
 
 ## 📊 **Package Statistics**
 
-- **📁 Total Files**: 20+ files
-- **🔗 API Endpoints**: 6 endpoints  
-- **🎯 Scraping Modes**: 7 modes
-- **📖 Documentation**: 4 comprehensive guides
-- **🧪 Test Cases**: 15+ scenarios
-- **💡 Examples**: Node.js + React
+- **🔗 API Endpoints**: 8 endpoints
+- **🎯 Scraping Modes**: 6 modes
+- **📖 Documentation**: comprehensive guides + OpenAPI/Swagger
+- **🧪 Test Cases**: 80+ automated tests
+- **💡 Examples**: Node.js + React + typed SDK + web console
 - **🐳 Container Ready**: Docker + Compose
 - **⚡ Process Management**: PM2 ecosystem
 
@@ -175,6 +173,6 @@ This package is **100% complete** and ready for:
 
 The URL Scraper API bundle is **ready to ship**! 
 
-Just zip the entire `url-scraper-package` folder and you have a complete, production-ready web scraping service that's compatible with the Genesis project and ready for any deployment scenario.
+Just zip the entire `url-scraper-package` folder and you have a complete, production-ready web scraping service ready for any deployment scenario.
 
 **Happy Shipping! 🎉**

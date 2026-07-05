@@ -59,29 +59,28 @@ async function testApi() {
         console.log(`   Error: ${error.response?.data?.error || error.message}`);
     }
     
-    // Test 4: Genesis Original Mode
-    console.log('\n4. Testing Genesis original mode...');
+    // Test 4: All-text Mode
+    console.log('\n4. Testing all-text mode...');
     try {
         const response = await axios.post(`${API_BASE}/api/scrape`, {
             url: 'https://httpbin.org/html',
-            mode: 'genesis-original'
+            mode: 'all-text'
         });
-        
+
         if (response.data.success) {
-            console.log('   ✅ Genesis original mode working');
+            console.log('   ✅ All-text mode working');
             console.log(`   📊 Found ${response.data.data.content.length} content items`);
-            
-            // Show first item if available
+
             if (response.data.data.content.length > 0) {
                 const firstItem = response.data.data.content[0];
-                console.log(`   📝 Sample: "${firstItem.heading?.substring(0, 50)}..."`);
+                console.log(`   📝 Sample: "${firstItem.text?.substring(0, 50)}..."`);
             }
         }
     } catch (error) {
-        console.log('   ❌ Genesis original mode failed');
+        console.log('   ❌ All-text mode failed');
         console.log(`   Error: ${error.response?.data?.error || error.message}`);
     }
-    
+
     // Test 5: Error Handling
     console.log('\n5. Testing error handling...');
     try {
@@ -110,7 +109,7 @@ async function testApi() {
     console.log('   • Health check ✅');
     console.log('   • Available modes ✅');
     console.log('   • Basic scraping ✅');
-    console.log('   • Genesis mode ✅');
+    console.log('   • All-text mode ✅');
     console.log('   • Error handling ✅');
     console.log('\n🚀 Your URL Scraper API is ready to use!');
     console.log('\n📚 Next steps:');

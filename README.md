@@ -16,7 +16,7 @@ limiting, metrics, and OpenAPI docs.
 | | |
 |---|---|
 | 🔒 **SSRF-safe by default** | DNS-resolved IP checks, per-redirect re-validation, and socket pinning defeat private-network, cloud-metadata, and DNS-rebinding attacks. |
-| 🧭 **7 extraction modes** | `headings-paragraphs`, `articles`, `lists`, `tables`, `all-text`, `custom` (CSS selector), and `genesis-original`. |
+| 🧭 **6 extraction modes** | `headings-paragraphs`, `articles`, `lists`, `tables`, `all-text`, and `custom` (CSS selector). |
 | 🖥️ **JavaScript rendering** | Opt-in headless-Chromium rendering (`render: true`) for React/Vue/Angular/SPA sites, via Playwright. |
 | 📸 **Screenshots & PDF** | `POST /api/screenshot` and `POST /api/pdf` — full-page PNG/JPEG or Chromium PDF, base64 or raw bytes. |
 | 🚦 **Throttled queue** | Global + per-domain concurrency caps and a politeness delay; overflow rejected fast (503). |
@@ -131,7 +131,6 @@ npx playwright install chromium
 | `tables` | Tables → headers + rows |
 | `all-text` | All headings/paragraphs/list-items over a length threshold |
 | `custom` | Nodes matching `options.selector` |
-| `genesis-original` | `h2`/`h3` paired with the following paragraph (legacy) |
 
 ### Batch
 

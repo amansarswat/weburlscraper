@@ -2,7 +2,6 @@
 
 export type ScrapeMode =
     | 'headings-paragraphs'
-    | 'genesis-original'
     | 'all-text'
     | 'articles'
     | 'lists'
