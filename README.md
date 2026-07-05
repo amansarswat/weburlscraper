@@ -1,15 +1,35 @@
 # URL Scraper API
 
-A production-ready, self-hostable web-scraping API. Extract structured content
-from any web page — headings, articles, lists, tables, or custom selectors —
-with **SSRF-safe fetching**, **optional JavaScript rendering**, caching, rate
-limiting, metrics, and OpenAPI docs.
+A production-ready, self-hostable **web-scraping API**. Extract structured content
+from any web page — headings, articles, lists, tables, or custom selectors — with
+**SSRF-safe fetching**, **optional JavaScript rendering**, screenshots & PDF,
+caching, rate limiting, metrics, a typed client SDK, and a web console.
 
-[![CI](https://github.com/your-org/url-scraper-api/actions/workflows/ci.yml/badge.svg)](./.github/workflows/ci.yml)
+[![CI](https://github.com/amansarswat/weburlscraper/actions/workflows/ci.yml/badge.svg)](https://github.com/amansarswat/weburlscraper/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
+![Express](https://img.shields.io/badge/express-5-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ---
+
+## Contents
+
+- [Highlights](#-highlights)
+- [Requirements](#-requirements)
+- [Quick start](#-quick-start)
+- [API reference](#-api-reference)
+- [Extraction modes](#-extraction-modes)
+- [Screenshots & PDF](#-screenshots--pdf)
+- [Client SDK](#-client-sdk)
+- [Web console](#-web-console)
+- [Security](#-security)
+- [Throttling & queue](#-throttling--queue)
+- [Configuration](#-configuration)
+- [Deployment](#-deployment)
+- [Observability](#-observability)
+- [Development](#-development)
+- [Project structure](#-project-structure)
+- [License](#-license)
 
 ## ✨ Highlights
 
@@ -28,9 +48,18 @@ limiting, metrics, and OpenAPI docs.
 | 📚 **OpenAPI + Swagger UI** | Interactive docs at `/api/docs`; machine-readable spec at `/api/openapi.json`. |
 | 🐳 **Deploy anywhere** | Docker (static + rendering images), docker-compose, PM2, Nginx examples. |
 
+## 📋 Requirements
+
+- **Node.js ≥ 18** (uses global `fetch`, Express 5).
+- **Optional:** Chromium via Playwright for JS rendering / screenshots / PDF.
+- **Optional:** Redis for cluster-safe rate limiting and a shared cache.
+
 ## 🚀 Quick start
 
 ```bash
+git clone https://github.com/amansarswat/weburlscraper.git
+cd weburlscraper
+
 npm install
 cp config.env.example .env      # optional; sensible defaults otherwise
 npm start                       # -> http://localhost:3000
@@ -48,26 +77,32 @@ Open interactive docs at **http://localhost:3000/api/docs**.
 
 ### Enable JavaScript rendering (optional)
 
+Playwright is installed automatically (it's an optional dependency); you just need
+the browser binary:
+
 ```bash
-npm install playwright        # already an optional dependency
 npx playwright install chromium
-# then send { "url": "...", "render": true }
 ```
 
-## 🔧 API
+Then pass `"render": true` to `/api/scrape`, or use `/api/screenshot` and `/api/pdf`.
 
-| Method & path | Description | Auth |
-|---|---|---|
-| `POST /api/scrape` | Scrape a single URL | ✅ when enabled |
-| `POST /api/scrape/batch` | Scrape up to `MAX_BATCH_URLS` URLs | ✅ when enabled |
-| `POST /api/screenshot` | Capture a PNG/JPEG screenshot (needs rendering) | ✅ when enabled |
-| `POST /api/pdf` | Render a URL to PDF (needs rendering) | ✅ when enabled |
-| `GET /api/modes` | List extraction modes, outputs + rendering availability | — |
-| `GET /api/usage` | Usage analytics summary + live queue stats | ✅ when enabled |
+## 🔧 API reference
+
+| Method & path | Description | Auth¹ |
+|---|---|:---:|
+| `POST /api/scrape` | Scrape a single URL | ✅ |
+| `POST /api/scrape/batch` | Scrape up to `MAX_BATCH_URLS` URLs | ✅ |
+| `POST /api/screenshot` | Capture a PNG/JPEG screenshot (needs rendering) | ✅ |
+| `POST /api/pdf` | Render a URL to PDF (needs rendering) | ✅ |
+| `GET /api/modes` | List extraction modes, outputs, rendering availability | — |
+| `GET /api/usage` | Usage analytics summary + live queue stats | ✅ |
 | `GET /api/docs` | Swagger UI | — |
 | `GET /api/openapi.json` | OpenAPI 3.0 spec | — |
 | `GET /health`, `/health/detailed` | Liveness + diagnostics | — |
 | `GET /metrics` | Prometheus metrics | — |
+
+> ¹ Auth applies only when `API_KEYS` is set. When it's empty the API is open (with
+> a startup warning) and every endpoint is reachable without a key.
 
 ### `POST /api/scrape`
 
@@ -82,10 +117,12 @@ npx playwright install chromium
 }
 ```
 
-- `url` *(required)* — target URL (scheme optional; defaults to `https://`).
-- `mode` *(optional)* — one of the modes below (default `headings-paragraphs`).
-- `render` *(optional)* — `true` to render JavaScript with a headless browser.
-- `options.selector` — required when `mode` is `custom`.
+| Field | Required | Description |
+|---|---|---|
+| `url` | ✅ | Target URL (scheme optional; defaults to `https://`). |
+| `mode` | — | Extraction mode (default `headings-paragraphs`). See [modes](#-extraction-modes). |
+| `render` | — | `true` renders JavaScript with a headless browser. |
+| `options.selector` | when `mode=custom` | CSS selector to extract. |
 
 **Response**
 
@@ -99,12 +136,22 @@ npx playwright install chromium
     "requestedUrl": "https://example.com",
     "title": "Example Domain",
     "description": "…",
-    "content": [ { "type": "heading-paragraph", "heading": "…", "paragraph": "…", "level": "h1" } ],
-    "metadata": { "totalItems": 1, "scrapedAt": "2026-07-05T00:00:00.000Z", "mode": "headings-paragraphs", "rendered": false }
+    "content": [
+      { "type": "heading-paragraph", "heading": "…", "paragraph": "…", "level": "h1" }
+    ],
+    "metadata": {
+      "totalItems": 1,
+      "scrapedAt": "2026-07-05T00:00:00.000Z",
+      "mode": "headings-paragraphs",
+      "rendered": false,
+      "contentLength": 1256
+    }
   },
   "performance": { "duration": 267, "itemsExtracted": 1 }
 }
 ```
+
+`data.url` is the **final** URL after redirects; `data.requestedUrl` is what you sent.
 
 **Errors** always include a machine-readable `code`:
 
@@ -118,10 +165,23 @@ npx playwright install chromium
 | 401 | `UNAUTHORIZED` |
 | 403 | `PRIVATE_IP_BLOCKED`, `PROTOCOL_BLOCKED`, `ROBOTS_DISALLOWED` |
 | 429 | `RATE_LIMITED` |
-| 502 | `FETCH_FAILED`, `DNS_FAILED`, `TOO_MANY_REDIRECTS` |
 | 501 | `RENDER_UNAVAILABLE`, `RENDER_DISABLED` |
+| 502 | `FETCH_FAILED`, `DNS_FAILED`, `TOO_MANY_REDIRECTS` |
+| 503 | `QUEUE_FULL`, `QUEUE_TIMEOUT` |
 
-### Extraction modes
+### Batch
+
+```bash
+curl -X POST http://localhost:3000/api/scrape/batch \
+  -H "Content-Type: application/json" \
+  -d '{"urls":["https://a.com","https://b.com"],"mode":"articles"}'
+```
+
+Each URL succeeds or fails independently; the response reports per-URL results and
+an aggregate summary. The queue still throttles real concurrency and per-domain
+politeness.
+
+## 🧭 Extraction modes
 
 | Mode | Extracts |
 |---|---|
@@ -132,20 +192,9 @@ npx playwright install chromium
 | `all-text` | All headings/paragraphs/list-items over a length threshold |
 | `custom` | Nodes matching `options.selector` |
 
-### Batch
+## 📸 Screenshots & PDF
 
-```bash
-curl -X POST http://localhost:3000/api/scrape/batch \
-  -H "Content-Type: application/json" \
-  -d '{"urls":["https://a.com","https://b.com"],"mode":"articles"}'
-```
-
-Each URL succeeds or fails independently; the response reports per-URL results
-and an aggregate summary.
-
-### Screenshots & PDF
-
-Both require JavaScript rendering to be available (see setup above).
+Both require JavaScript rendering to be available (`npx playwright install chromium`).
 
 ```bash
 # Base64 JSON (default)
@@ -159,9 +208,9 @@ curl -X POST http://localhost:3000/api/pdf \
   -d '{"url":"https://example.com","encoding":"binary"}' --output page.pdf
 ```
 
-`screenshot` accepts `fullPage`, `type` (`png`|`jpeg`), `quality`, `width`,
-`height`. `pdf` accepts `format` (e.g. `A4`), `landscape`, `printBackground`.
-Add `"encoding":"binary"` to either for raw bytes instead of a base64 envelope.
+- **`/api/screenshot`** accepts `fullPage`, `type` (`png`|`jpeg`), `quality`, `width`, `height`.
+- **`/api/pdf`** accepts `format` (e.g. `A4`), `landscape`, `printBackground`.
+- Add `"encoding":"binary"` to either for raw bytes instead of a base64 envelope.
 
 ## 📦 Client SDK
 
@@ -181,32 +230,18 @@ Methods: `scrape`, `scrapeBatch`, `screenshot`, `pdf`, `getModes`, `getUsage`,
 `health`. Errors throw a typed `ScraperApiError` (with `.status` and `.code`).
 TypeScript declarations are bundled ([sdk/index.d.ts](sdk/index.d.ts)).
 
-## 🚦 Throttling & queue
-
-To stay polite and bounded, scrapes run through a queue that caps **global** and
-**per-domain** concurrency, with an optional delay between requests to the same
-domain. Requests beyond `SCRAPE_QUEUE_MAX` are rejected with `503 QUEUE_FULL`;
-those that wait past `SCRAPE_QUEUE_TIMEOUT_MS` get `503 QUEUE_TIMEOUT`. Live queue
-depth is visible at `GET /health/detailed` and `GET /api/usage`.
-
-```bash
-SCRAPE_MAX_CONCURRENCY=10
-SCRAPE_PER_DOMAIN_CONCURRENCY=2
-SCRAPE_PER_DOMAIN_DELAY_MS=0
-```
-
 ## 🖼️ Web console
 
-A React single-page app in [web/](web/) provides a scrape playground, screenshot/PDF
-capture, and a live usage dashboard.
+A React single-page app in [web/](web/) with a scrape **playground**,
+**screenshot/PDF** capture, and a live **usage dashboard**.
 
 ```bash
-# Development (proxies to the API on :3000)
-cd web && npm install && npm run dev        # http://localhost:5173
+# Development (hot reload; proxies API calls to :3000)
+cd web && npm install && npm run dev        # -> http://localhost:5173
 
 # Or serve the built console from the API itself (single process)
 cd web && npm install && npm run build
-cd .. && SERVE_UI=true npm start            # http://localhost:3000/app
+cd .. && SERVE_UI=true npm start            # -> http://localhost:3000/app
 ```
 
 Set the API base URL and API key from the app's top bar (saved to `localStorage`).
@@ -215,44 +250,59 @@ See [web/README.md](web/README.md).
 ## 🔒 Security
 
 - **SSRF guard** ([security/ssrf.js](security/ssrf.js)): resolves DNS and rejects
-  any request whose IP is loopback, private, link-local (incl. `169.254.169.254`),
-  unique-local, CGNAT, reserved, or an IPv4-mapped form of those — for the target
-  **and every redirect hop**. The connection is pinned to the checked IP so DNS
-  cannot be rebound between check and connect. Only `http`/`https` are allowed.
-  > Internal/self-hosted use only: `ALLOW_PRIVATE_ADDRESSES=true` disables this.
-  > **Never** enable it on a public instance.
+  any request whose IP is loopback, private, link-local (incl. the cloud-metadata
+  address `169.254.169.254`), unique-local, CGNAT, reserved, or an IPv4-mapped form
+  of those — for the target **and every redirect hop**. The connection is pinned to
+  the checked IP so DNS cannot be rebound between check and connect. Only `http`/`https`
+  are allowed.
+  > `ALLOW_PRIVATE_ADDRESSES=true` disables this for internal/self-hosted use.
+  > **Never** enable it on a publicly-reachable instance.
 - **API keys** — set `API_KEYS=key1,key2`. Clients send `x-api-key: <key>` or
-  `Authorization: Bearer <key>`. Meta/health endpoints stay open. Rate limits are
+  `Authorization: Bearer <key>`. Meta/health endpoints stay open; rate limits are
   keyed per API key.
-- **Rate limiting** — general + stricter scrape limits. For clusters, set
-  `REDIS_URL` so limits are shared (otherwise each worker has its own counter).
-- **Helmet** security headers, configurable **CORS**, request body size limits.
+- **Rate limiting** — a general limit plus a stricter scrape limit. For clusters,
+  set `REDIS_URL` so limits are shared (otherwise each worker counts separately).
+- **Helmet** security headers, configurable **CORS**, and request body-size limits.
+
+## 🚦 Throttling & queue
+
+Scrapes run through a queue that caps **global** and **per-domain** concurrency, with
+an optional delay between requests to the same domain. Requests beyond
+`SCRAPE_QUEUE_MAX` are rejected with `503 QUEUE_FULL`; those that wait past
+`SCRAPE_QUEUE_TIMEOUT_MS` get `503 QUEUE_TIMEOUT`. Live queue depth is visible at
+`GET /health/detailed` and `GET /api/usage`.
+
+```bash
+SCRAPE_MAX_CONCURRENCY=10
+SCRAPE_PER_DOMAIN_CONCURRENCY=2
+SCRAPE_PER_DOMAIN_DELAY_MS=0
+```
 
 ## ⚙️ Configuration
 
 All settings are environment variables — see [config.env.example](config.env.example)
-for the complete, commented list. Common ones:
+for the complete, commented list. The most common:
 
-```bash
-PORT=3000
-API_KEYS=                       # empty = open (warns at boot)
-RATE_LIMIT=100
-SCRAPER_RATE_LIMIT=20
-SCRAPER_TIMEOUT=10000
-RENDER_ENABLED=true
-RESPECT_ROBOTS=false
-CACHE_ENABLED=true
-REDIS_URL=                      # enables shared cache + rate limits
-METRICS_ENABLED=true
-LOG_LEVEL=info
-```
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `3000` | HTTP port |
+| `API_KEYS` | *(empty)* | Comma-separated keys; empty = open (warns at boot) |
+| `RATE_LIMIT` / `SCRAPER_RATE_LIMIT` | `100` / `20` | Requests per window (general / scrape) |
+| `SCRAPER_TIMEOUT` | `10000` | Per-request fetch timeout (ms) |
+| `RENDER_ENABLED` | `true` | Allow JS rendering / screenshots / PDF |
+| `RESPECT_ROBOTS` | `false` | Honor target `robots.txt` |
+| `CACHE_ENABLED` | `true` | Response caching |
+| `REDIS_URL` | *(empty)* | Shared cache + rate limits across instances |
+| `SERVE_UI` | `false` | Serve the built web console at `/app` |
+| `METRICS_ENABLED` | `true` | Expose `/metrics` |
+| `LOG_LEVEL` | `info` | `trace`…`fatal` |
 
 ## 🐳 Deployment
 
 ### Docker
 
 ```bash
-# Static scraping (small image)
+# Static scraping (small image, no browser)
 docker build -t url-scraper-api .
 docker run -p 3000:3000 -e API_KEYS=changeme url-scraper-api
 
@@ -263,8 +313,8 @@ docker build -f Dockerfile.playwright -t url-scraper-api:render .
 ### docker-compose
 
 ```bash
-docker compose up                      # app only
-docker compose --profile with-redis up # app + Redis (shared limits/cache)
+docker compose up                        # app only
+docker compose --profile with-redis up   # app + Redis (shared limits/cache)
 ```
 
 ### PM2
@@ -289,27 +339,30 @@ server {
 }
 ```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for more.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for cloud-specific guides.
 
 ## 📈 Observability
 
-- `GET /metrics` — Prometheus format (`http_request_duration_seconds`,
+- **`GET /metrics`** — Prometheus (`http_request_duration_seconds`,
   `scrape_requests_total`, `scrape_duration_seconds`, `scrape_cache_hits_total`,
   plus default Node process metrics).
-- `GET /api/usage` — human-friendly JSON summary: totals, cache-hit/error rates,
-  breakdown by mode and error code, top target domains, per-API-key usage, and
-  live queue depth.
-- `GET /health` / `GET /health/detailed` — liveness + enabled-features report.
+- **`GET /api/usage`** — human-friendly JSON summary: totals, cache-hit/error rates,
+  breakdown by mode and error code, top target domains, per-API-key usage, and live
+  queue depth.
+- **`GET /health` / `GET /health/detailed`** — liveness + enabled-features report.
 - Structured JSON logs (pino) with an `x-request-id` on every request/response.
 
 ## 🧪 Development
 
 ```bash
 npm run dev            # nodemon + pretty logs
-npm test               # jest (61 tests, no network required)
-npm run test:coverage
+npm test               # jest — 77 tests, no network required
+npm run test:coverage  # tests + coverage report
 npm run lint           # eslint
 ```
+
+The test suite is hermetic: SSRF blocking, extractors, the queue, analytics, auth,
+the HTTP endpoints, and the SDK are all covered without hitting the network.
 
 ## 📦 Project structure
 
@@ -320,17 +373,17 @@ config/           Centralized, validated configuration
 routes/           scraper, health, metrics
 middleware/       auth, validator, errorHandler
 security/         ssrf (guard + safe fetch), robots
-utils/            WebScraper (orchestrator), extractors, renderer (Playwright: render/screenshot/pdf)
+utils/            WebScraper (orchestrator), extractors, renderer (render/screenshot/pdf)
 lib/              logger, cache, rateLimit, metrics, errors, asyncHandler, queue, scrapeQueue, analytics
 docs/             OpenAPI spec
 sdk/              typed client (index.js + index.d.ts)
 web/              React + Vite web console (playground, capture, dashboard)
-tests/            unit + integration tests (80+)
+tests/            unit + integration tests (77)
 ```
 
 ## 📄 License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 > **Scrape responsibly.** Respect each site's Terms of Service and `robots.txt`
 > (set `RESPECT_ROBOTS=true`), and follow the laws that apply to you.
