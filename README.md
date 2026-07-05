@@ -1,0 +1,337 @@
+# URL Scraper API
+
+A production-ready, self-hostable web-scraping API. Extract structured content
+from any web page — headings, articles, lists, tables, or custom selectors —
+with **SSRF-safe fetching**, **optional JavaScript rendering**, caching, rate
+limiting, metrics, and OpenAPI docs.
+
+[![CI](https://github.com/your-org/url-scraper-api/actions/workflows/ci.yml/badge.svg)](./.github/workflows/ci.yml)
+![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+---
+
+## ✨ Highlights
+
+| | |
+|---|---|
+| 🔒 **SSRF-safe by default** | DNS-resolved IP checks, per-redirect re-validation, and socket pinning defeat private-network, cloud-metadata, and DNS-rebinding attacks. |
+| 🧭 **7 extraction modes** | `headings-paragraphs`, `articles`, `lists`, `tables`, `all-text`, `custom` (CSS selector), and `genesis-original`. |
+| 🖥️ **JavaScript rendering** | Opt-in headless-Chromium rendering (`render: true`) for React/Vue/Angular/SPA sites, via Playwright. |
+| 📸 **Screenshots & PDF** | `POST /api/screenshot` and `POST /api/pdf` — full-page PNG/JPEG or Chromium PDF, base64 or raw bytes. |
+| 🚦 **Throttled queue** | Global + per-domain concurrency caps and a politeness delay; overflow rejected fast (503). |
+| 🔑 **Optional API keys** | Enable auth with one env var; constant-time key checks; per-key rate limits. |
+| ⚡ **Caching** | In-memory LRU out of the box, shared Redis for clusters. |
+| 📊 **Observability** | Prometheus `/metrics`, usage analytics (`/api/usage`), structured JSON logs with request IDs, health probes. |
+| 📦 **Typed client SDK** | `url-scraper-api/sdk` — isomorphic, zero-dependency, fully typed (`.d.ts`). |
+| 🖼️ **Web console** | React SPA ([web/](web/)) — scrape playground, screenshot/PDF capture, live usage dashboard. Optionally served by the API at `/app`. |
+| 📚 **OpenAPI + Swagger UI** | Interactive docs at `/api/docs`; machine-readable spec at `/api/openapi.json`. |
+| 🐳 **Deploy anywhere** | Docker (static + rendering images), docker-compose, PM2, Nginx examples. |
+
+## 🚀 Quick start
+
+```bash
+npm install
+cp config.env.example .env      # optional; sensible defaults otherwise
+npm start                       # -> http://localhost:3000
+```
+
+Scrape something:
+
+```bash
+curl -X POST http://localhost:3000/api/scrape \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com","mode":"headings-paragraphs"}'
+```
+
+Open interactive docs at **http://localhost:3000/api/docs**.
+
+### Enable JavaScript rendering (optional)
+
+```bash
+npm install playwright        # already an optional dependency
+npx playwright install chromium
+# then send { "url": "...", "render": true }
+```
+
+## 🔧 API
+
+| Method & path | Description | Auth |
+|---|---|---|
+| `POST /api/scrape` | Scrape a single URL | ✅ when enabled |
+| `POST /api/scrape/batch` | Scrape up to `MAX_BATCH_URLS` URLs | ✅ when enabled |
+| `POST /api/screenshot` | Capture a PNG/JPEG screenshot (needs rendering) | ✅ when enabled |
+| `POST /api/pdf` | Render a URL to PDF (needs rendering) | ✅ when enabled |
+| `GET /api/modes` | List extraction modes, outputs + rendering availability | — |
+| `GET /api/usage` | Usage analytics summary + live queue stats | ✅ when enabled |
+| `GET /api/docs` | Swagger UI | — |
+| `GET /api/openapi.json` | OpenAPI 3.0 spec | — |
+| `GET /health`, `/health/detailed` | Liveness + diagnostics | — |
+| `GET /metrics` | Prometheus metrics | — |
+
+### `POST /api/scrape`
+
+**Request**
+
+```json
+{
+  "url": "https://example.com",
+  "mode": "headings-paragraphs",
+  "render": false,
+  "options": { "selector": ".article p" }
+}
+```
+
+- `url` *(required)* — target URL (scheme optional; defaults to `https://`).
+- `mode` *(optional)* — one of the modes below (default `headings-paragraphs`).
+- `render` *(optional)* — `true` to render JavaScript with a headless browser.
+- `options.selector` — required when `mode` is `custom`.
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Content scraped successfully",
+  "cached": false,
+  "data": {
+    "url": "https://example.com/",
+    "requestedUrl": "https://example.com",
+    "title": "Example Domain",
+    "description": "…",
+    "content": [ { "type": "heading-paragraph", "heading": "…", "paragraph": "…", "level": "h1" } ],
+    "metadata": { "totalItems": 1, "scrapedAt": "2026-07-05T00:00:00.000Z", "mode": "headings-paragraphs", "rendered": false }
+  },
+  "performance": { "duration": 267, "itemsExtracted": 1 }
+}
+```
+
+**Errors** always include a machine-readable `code`:
+
+```json
+{ "success": false, "error": "Access to non-public IP addresses is not allowed", "code": "PRIVATE_IP_BLOCKED" }
+```
+
+| Status | Codes |
+|---|---|
+| 400 | `VALIDATION_ERROR` |
+| 401 | `UNAUTHORIZED` |
+| 403 | `PRIVATE_IP_BLOCKED`, `PROTOCOL_BLOCKED`, `ROBOTS_DISALLOWED` |
+| 429 | `RATE_LIMITED` |
+| 502 | `FETCH_FAILED`, `DNS_FAILED`, `TOO_MANY_REDIRECTS` |
+| 501 | `RENDER_UNAVAILABLE`, `RENDER_DISABLED` |
+
+### Extraction modes
+
+| Mode | Extracts |
+|---|---|
+| `headings-paragraphs` *(default)* | Each heading with its following paragraph(s) |
+| `articles` | Article bodies from common containers (`article`, `main`, `.post`, …) |
+| `lists` | Ordered/unordered lists with items |
+| `tables` | Tables → headers + rows |
+| `all-text` | All headings/paragraphs/list-items over a length threshold |
+| `custom` | Nodes matching `options.selector` |
+| `genesis-original` | `h2`/`h3` paired with the following paragraph (legacy) |
+
+### Batch
+
+```bash
+curl -X POST http://localhost:3000/api/scrape/batch \
+  -H "Content-Type: application/json" \
+  -d '{"urls":["https://a.com","https://b.com"],"mode":"articles"}'
+```
+
+Each URL succeeds or fails independently; the response reports per-URL results
+and an aggregate summary.
+
+### Screenshots & PDF
+
+Both require JavaScript rendering to be available (see setup above).
+
+```bash
+# Base64 JSON (default)
+curl -X POST http://localhost:3000/api/screenshot \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com","fullPage":true,"type":"png"}'
+
+# Raw bytes straight to a file
+curl -X POST http://localhost:3000/api/pdf \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com","encoding":"binary"}' --output page.pdf
+```
+
+`screenshot` accepts `fullPage`, `type` (`png`|`jpeg`), `quality`, `width`,
+`height`. `pdf` accepts `format` (e.g. `A4`), `landscape`, `printBackground`.
+Add `"encoding":"binary"` to either for raw bytes instead of a base64 envelope.
+
+## 📦 Client SDK
+
+A zero-dependency, fully-typed client ships in the package (`url-scraper-api/sdk`):
+
+```js
+const { UrlScraperClient } = require('url-scraper-api/sdk');
+
+const client = new UrlScraperClient({ baseUrl: 'http://localhost:3000', apiKey: 'secret' });
+
+const { data } = await client.scrape('https://example.com', { mode: 'articles' });
+const png = await client.screenshot('https://example.com', { binary: true }); // Buffer
+const usage = await client.getUsage();
+```
+
+Methods: `scrape`, `scrapeBatch`, `screenshot`, `pdf`, `getModes`, `getUsage`,
+`health`. Errors throw a typed `ScraperApiError` (with `.status` and `.code`).
+TypeScript declarations are bundled ([sdk/index.d.ts](sdk/index.d.ts)).
+
+## 🚦 Throttling & queue
+
+To stay polite and bounded, scrapes run through a queue that caps **global** and
+**per-domain** concurrency, with an optional delay between requests to the same
+domain. Requests beyond `SCRAPE_QUEUE_MAX` are rejected with `503 QUEUE_FULL`;
+those that wait past `SCRAPE_QUEUE_TIMEOUT_MS` get `503 QUEUE_TIMEOUT`. Live queue
+depth is visible at `GET /health/detailed` and `GET /api/usage`.
+
+```bash
+SCRAPE_MAX_CONCURRENCY=10
+SCRAPE_PER_DOMAIN_CONCURRENCY=2
+SCRAPE_PER_DOMAIN_DELAY_MS=0
+```
+
+## 🖼️ Web console
+
+A React single-page app in [web/](web/) provides a scrape playground, screenshot/PDF
+capture, and a live usage dashboard.
+
+```bash
+# Development (proxies to the API on :3000)
+cd web && npm install && npm run dev        # http://localhost:5173
+
+# Or serve the built console from the API itself (single process)
+cd web && npm install && npm run build
+cd .. && SERVE_UI=true npm start            # http://localhost:3000/app
+```
+
+Set the API base URL and API key from the app's top bar (saved to `localStorage`).
+See [web/README.md](web/README.md).
+
+## 🔒 Security
+
+- **SSRF guard** ([security/ssrf.js](security/ssrf.js)): resolves DNS and rejects
+  any request whose IP is loopback, private, link-local (incl. `169.254.169.254`),
+  unique-local, CGNAT, reserved, or an IPv4-mapped form of those — for the target
+  **and every redirect hop**. The connection is pinned to the checked IP so DNS
+  cannot be rebound between check and connect. Only `http`/`https` are allowed.
+  > Internal/self-hosted use only: `ALLOW_PRIVATE_ADDRESSES=true` disables this.
+  > **Never** enable it on a public instance.
+- **API keys** — set `API_KEYS=key1,key2`. Clients send `x-api-key: <key>` or
+  `Authorization: Bearer <key>`. Meta/health endpoints stay open. Rate limits are
+  keyed per API key.
+- **Rate limiting** — general + stricter scrape limits. For clusters, set
+  `REDIS_URL` so limits are shared (otherwise each worker has its own counter).
+- **Helmet** security headers, configurable **CORS**, request body size limits.
+
+## ⚙️ Configuration
+
+All settings are environment variables — see [config.env.example](config.env.example)
+for the complete, commented list. Common ones:
+
+```bash
+PORT=3000
+API_KEYS=                       # empty = open (warns at boot)
+RATE_LIMIT=100
+SCRAPER_RATE_LIMIT=20
+SCRAPER_TIMEOUT=10000
+RENDER_ENABLED=true
+RESPECT_ROBOTS=false
+CACHE_ENABLED=true
+REDIS_URL=                      # enables shared cache + rate limits
+METRICS_ENABLED=true
+LOG_LEVEL=info
+```
+
+## 🐳 Deployment
+
+### Docker
+
+```bash
+# Static scraping (small image)
+docker build -t url-scraper-api .
+docker run -p 3000:3000 -e API_KEYS=changeme url-scraper-api
+
+# With JavaScript rendering (bundles Chromium)
+docker build -f Dockerfile.playwright -t url-scraper-api:render .
+```
+
+### docker-compose
+
+```bash
+docker compose up                      # app only
+docker compose --profile with-redis up # app + Redis (shared limits/cache)
+```
+
+### PM2
+
+```bash
+npm run pm2:start     # cluster mode; set REDIS_URL for correct shared limits
+```
+
+### Nginx reverse proxy
+
+```nginx
+server {
+  listen 80;
+  server_name your-domain.com;
+  location / {
+    proxy_pass http://localhost:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for more.
+
+## 📈 Observability
+
+- `GET /metrics` — Prometheus format (`http_request_duration_seconds`,
+  `scrape_requests_total`, `scrape_duration_seconds`, `scrape_cache_hits_total`,
+  plus default Node process metrics).
+- `GET /api/usage` — human-friendly JSON summary: totals, cache-hit/error rates,
+  breakdown by mode and error code, top target domains, per-API-key usage, and
+  live queue depth.
+- `GET /health` / `GET /health/detailed` — liveness + enabled-features report.
+- Structured JSON logs (pino) with an `x-request-id` on every request/response.
+
+## 🧪 Development
+
+```bash
+npm run dev            # nodemon + pretty logs
+npm test               # jest (61 tests, no network required)
+npm run test:coverage
+npm run lint           # eslint
+```
+
+## 📦 Project structure
+
+```
+app.js            Express app factory (no side effects)
+server.js         Bootstrap + graceful shutdown (entrypoint)
+config/           Centralized, validated configuration
+routes/           scraper, health, metrics
+middleware/       auth, validator, errorHandler
+security/         ssrf (guard + safe fetch), robots
+utils/            WebScraper (orchestrator), extractors, renderer (Playwright: render/screenshot/pdf)
+lib/              logger, cache, rateLimit, metrics, errors, asyncHandler, queue, scrapeQueue, analytics
+docs/             OpenAPI spec
+sdk/              typed client (index.js + index.d.ts)
+web/              React + Vite web console (playground, capture, dashboard)
+tests/            unit + integration tests (80+)
+```
+
+## 📄 License
+
+MIT — see [LICENSE](LICENSE).
+
+> **Scrape responsibly.** Respect each site's Terms of Service and `robots.txt`
+> (set `RESPECT_ROBOTS=true`), and follow the laws that apply to you.

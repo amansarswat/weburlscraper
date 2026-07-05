@@ -1,0 +1,44 @@
+services:
+  url-scraper:
+    build:
+      context: .
+      # For JS rendering, switch to: dockerfile: Dockerfile.playwright
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      LOG_PRETTY: "false"
+      # Set to enable auth. Comma-separated. STRONGLY recommended when public.
+      API_KEYS: ${API_KEYS:-}
+      RATE_LIMIT: 100
+      SCRAPER_RATE_LIMIT: 20
+      SCRAPER_TIMEOUT: 10000
+      MAX_CONTENT_LENGTH: 2097152
+      # Uncomment to make rate limits + cache shared across instances:
+      # REDIS_URL: redis://redis:6379
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - scraper-network
+    # depends_on:
+    #   - redis
+
+  # Optional shared backend for cluster-safe rate limiting + cache.
+  # Enable with:  docker compose --profile with-redis up
+  redis:
+    image: redis:7-alpine
+    profiles: ["with-redis"]
+    restart: unless-stopped
+    networks:
+      - scraper-network
+
+networks:
+  scraper-network:
+    driver: bridge
