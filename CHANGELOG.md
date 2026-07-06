@@ -10,6 +10,8 @@ All notable changes to this project are documented here. This project adheres to
   Extraction modes are now: `headings-paragraphs`, `all-text`, `articles`, `lists`,
   `tables`, `custom` (6 total). This is a breaking change for any caller that used
   `mode: "genesis-original"` — use `headings-paragraphs` instead.
+- **Minimum Node.js is now 20** (`cheerio` ≥ 20.18.1 and `lru-cache` require it;
+  Node 18 is EOL). CI runs on Node 20 and 22.
 
 ## [2.2.0] - 2026-07-05
 

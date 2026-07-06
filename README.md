@@ -6,7 +6,7 @@ from any web page — headings, articles, lists, tables, or custom selectors —
 caching, rate limiting, metrics, a typed client SDK, and a web console.
 
 [![CI](https://github.com/amansarswat/weburlscraper/actions/workflows/ci.yml/badge.svg)](https://github.com/amansarswat/weburlscraper/actions/workflows/ci.yml)
-![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
+![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
 ![Express](https://img.shields.io/badge/express-5-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -50,7 +50,7 @@ caching, rate limiting, metrics, a typed client SDK, and a web console.
 
 ## 📋 Requirements
 
-- **Node.js ≥ 18** (uses global `fetch`, Express 5).
+- **Node.js ≥ 20** (required by `cheerio` and `lru-cache`; Express 5, global `fetch`).
 - **Optional:** Chromium via Playwright for JS rendering / screenshots / PDF.
 - **Optional:** Redis for cluster-safe rate limiting and a shared cache.
 

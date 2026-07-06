@@ -90,4 +90,4 @@ url-scraper-package/
 - **Runtime deps**: 13 core + 3 optional (ioredis, playwright, rate-limit-redis)
 - **Tests**: 61 across 5 suites
 - **Security posture**: `npm audit` → 0 vulnerabilities
-- **Node**: >= 18 · **Express**: 5
+- **Node**: >= 20 · **Express**: 5

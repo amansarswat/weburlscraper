@@ -14,8 +14,8 @@ console.log('🚀 URL Scraper API Setup\n');
 const nodeVersion = process.version;
 const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
 
-if (majorVersion < 16) {
-    console.error('❌ Node.js 16 or higher is required');
+if (majorVersion < 20) {
+    console.error('❌ Node.js 20 or higher is required');
     console.error(`   Current version: ${nodeVersion}`);
     console.error('   Please upgrade Node.js and try again');
     process.exit(1);
